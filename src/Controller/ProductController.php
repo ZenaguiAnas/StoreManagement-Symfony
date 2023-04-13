@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Product;
 use App\Form\ProductType;
 use App\Repository\ProductRepository;
+// use Symfony\Bridge\Doctrine\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,6 +14,16 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/product')]
 class ProductController extends AbstractController
 {
+
+    private $productRepository;
+    private $entityManager;
+
+    // public function __construct(ProductRepository $productRepository, ManagerRegistry $doctrine)
+    // {
+    //     $this->productRepository = $productRepository;
+    //     $this->entityManager = $doctrine->getManager();
+    // }
+
     #[Route('/', name: 'app_product_index', methods: ['GET'])]
     public function index(ProductRepository $productRepository): Response
     {
@@ -29,6 +40,13 @@ class ProductController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $product = $form->getData();
+            if($request->files->get('product')['image']){
+                $image = $request->files->get('product')['image'];
+                $image_name = time() . '_' . $image->getClientOriginalName();
+                $image->move($this->getParameter('image_directory'), $image_name);
+                $product->setImage($image_name);
+            }
             $productRepository->save($product, true);
 
             return $this->redirectToRoute('app_product_index', [], Response::HTTP_SEE_OTHER);
